@@ -1,0 +1,56 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+
+# Pages への書き込みに必要な権限
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: 'pages'
+  cancel-in-progress: true    # 同時に複数デプロイしない
+
+jobs:
+  # ビルド
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # ── ① pnpm をインストール（Node より先に置くとキャッシュ最適化）
+      - uses: pnpm/action-setup@v4       # v4 で Node20+ 対応修正済み
+        with:
+          version: 9                    # 任意。8 以上を推奨
+          run_install: false
+
+      # ── ② Node をセットアップしつつ pnpm ストアをキャッシュ
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'            # 現行 LTS：Jod  [oai_citation:11‡nodejs.org](https://nodejs.org/en/blog/announcements/v22-release-announce?utm_source=chatgpt.com) [oai_citation:12‡nodejs.org](https://nodejs.org/en/about/previous-releases?utm_source=chatgpt.com)
+          cache: pnpm
+          # lock ファイルの正しい場所を指定!
+          cache-dependency-path: app/pnpm-lock.yaml
+
+      # ── ③ 依存を入れてビルド
+      - run: cd app && pnpm install --frozen-lockfile
+      - run: cd app && pnpm build:prod        # → app/dist
+
+      # Pages 用 artifact を作成（gzip-tar 形式）
+      - uses: actions/upload-pages-artifact@v3  # 2025 時点の最新  [oai_citation:13‡github.com](https://github.com/actions/upload-pages-artifact?utm_source=chatgpt.com)
+        with:
+          path: app/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages          # 自動生成される “GitHub Pages” 環境
+      url:  ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

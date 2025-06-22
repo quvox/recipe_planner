@@ -1,0 +1,40 @@
+name: Production Build Test
+
+# developブランチへのpush時にproduction buildが成功するかテストする
+on:
+  push:
+    branches:
+      - develop
+
+# 最小限の権限のみ設定
+permissions:
+  contents: read
+
+jobs:
+  # プロダクションビルドテスト
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # ── ① pnpm をインストール（Node より先に置くとキャッシュ最適化）
+      - uses: pnpm/action-setup@v4       # v4 で Node20+ 対応修正済み
+        with:
+          version: 9                    # 任意。8 以上を推奨
+          run_install: false
+
+      # ── ② Node をセットアップしつつ pnpm ストアをキャッシュ
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'            # 現行 LTS
+          cache: pnpm
+          # lock ファイルの正しい場所を指定
+          cache-dependency-path: app/pnpm-lock.yaml
+
+      # ── ③ 依存関係をインストール
+      - name: Install dependencies
+        run: cd app && pnpm install --frozen-lockfile
+
+      # ── ④ プロダクションビルドを実行してテスト
+      - name: Run production build test
+        run: cd app && pnpm build:prod
