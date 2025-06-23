@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - develop
+      - feature/*
 
 # 最小限の権限のみ設定
 permissions:
@@ -37,4 +38,4 @@ jobs:
 
       # ── ④ プロダクションビルドを実行してテスト
       - name: Run production build test
-        run: cd app && pnpm build:prod
+        run: cd app && pnpm run build

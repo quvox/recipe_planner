@@ -1,28 +1,38 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
+import { readFileSync } from 'fs'
 
-// https://vite.dev/config/
+// PWA対応のVite設定
+// GitHub Pagesでのホスティングを考慮した設定
 export default defineConfig({
-  // GitHub Pagesデプロイ用のベースパス設定
-  // リポジトリ名に応じて動的に設定
-  base: process.env.NODE_ENV === 'production' ? `/${process.env.GITHUB_REPOSITORY?.split('/')[1] || 'menu-planner'}/` : '/',
-  
+  // 環境変数の設定
+  define: {
+    'import.meta.env.VITE_APP_VERSION': JSON.stringify(
+      JSON.parse(readFileSync('./package.json', 'utf8')).version
+    ),
+    'import.meta.env.VITE_APP_AUTHOR': JSON.stringify(
+      JSON.parse(readFileSync('./package.json', 'utf8')).author
+    ),
+    'import.meta.env.VITE_BUILD_DATE': JSON.stringify(
+      new Date().toISOString().split('T')[0]
+    )
+  },
   plugins: [
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg}']
+      },
+      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'pwa-192x192.png', 'pwa-512x512.png'],
       manifest: {
         name: '献立提案アプリ',
-        short_name: '献立アプリ',
-        description: 'AI による時短料理の献立提案アプリ',
-        theme_color: '#3b82f6',
-        background_color: '#f8fafc',
+        short_name: '献立提案',
+        description: 'AI が時短料理の献立案を提案するPWAアプリ',
+        theme_color: '#ffffff',
+        background_color: '#ffffff',
         display: 'standalone',
-        orientation: 'portrait',
-        start_url: process.env.NODE_ENV === 'production' ? `/${process.env.GITHUB_REPOSITORY?.split('/')[1] || 'menu-planner'}/` : '/',
-        scope: process.env.NODE_ENV === 'production' ? `/${process.env.GITHUB_REPOSITORY?.split('/')[1] || 'menu-planner'}/` : '/',
         icons: [
           {
             src: 'pwa-192x192.png',
@@ -33,43 +43,12 @@ export default defineConfig({
             src: 'pwa-512x512.png',
             sizes: '512x512',
             type: 'image/png'
-          },
-          {
-            src: 'pwa-512x512.png',
-            sizes: '512x512',
-            type: 'image/png',
-            purpose: 'any maskable'
-          }
-        ]
-      },
-      workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
-        runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/api\.openai\.com\/.*/i,
-            handler: 'NetworkOnly'
-          },
-          {
-            urlPattern: /^https:\/\/api\.anthropic\.com\/.*/i,
-            handler: 'NetworkOnly'
           }
         ]
       }
     })
   ],
-  
-  // プロダクションビルド設定
-  build: {
-    outDir: 'dist',
-    sourcemap: false,
-    minify: 'terser',
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom'],
-          ui: ['zustand', 'idb']
-        }
-      }
-    }
-  }
+  // GitHub Pagesでのホスティング用base設定
+  // 環境変数VITE_BASE_URLが設定されていればそれを使用、なければ相対パス
+  base: process.env.VITE_BASE_URL || './'
 })

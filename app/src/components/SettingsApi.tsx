@@ -1,6 +1,6 @@
 /**
- * 設定画面コンポーネント
- * APIキー管理、アプリ設定、データ操作機能を提供
+ * APIトークン設定画面コンポーネント
+ * OpenAI・Claude APIトークンの管理
  */
 
 import React, { useState, useEffect } from 'react';
@@ -9,17 +9,16 @@ import type { AIProvider } from '../types';
 import { aiService } from '../services/aiService';
 
 /**
- * 設定画面コンポーネント
- * APIキーの設定・管理とアプリケーション設定を行う
+ * APIトークン設定画面コンポーネント
+ * AIサービスのAPIキーを設定・管理
  */
-export const Settings: React.FC = () => {
+export const SettingsApi: React.FC = () => {
   const { 
     apiKeys, 
     preferredProvider, 
     updateApiKeys, 
     setPreferredProvider,
-    exportData,
-    importData 
+    setCurrentView 
   } = useAppStore();
   
   // フォームの状態管理
@@ -42,9 +41,7 @@ export const Settings: React.FC = () => {
   
   // 保存状態
   const [isSaving, setIsSaving] = useState(false);
-  
-  // インポート用のファイル入力ref
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [saveMessage, setSaveMessage] = useState('');
 
   /**
    * コンポーネントマウント時にフォームデータを初期化
@@ -101,65 +98,54 @@ export const Settings: React.FC = () => {
   };
 
   /**
+   * APIキーの削除
+   */
+  const deleteApiKey = async (provider: 'openai' | 'claude') => {
+    const keyField = provider === 'openai' ? 'openaiKey' : 'claudeKey';
+    
+    setFormData(prev => ({
+      ...prev,
+      [keyField]: ''
+    }));
+    
+    // 即座に保存
+    await updateApiKeys({
+      ...apiKeys,
+      [keyField]: undefined
+    });
+    
+    setKeyTests(prev => ({ ...prev, [provider]: 'idle' }));
+    setSaveMessage(`${provider === 'openai' ? 'OpenAI' : 'Claude'}のAPIキーを削除しました`);
+    setTimeout(() => setSaveMessage(''), 3000);
+  };
+
+  /**
    * 設定を保存
    */
   const handleSave = async () => {
     setIsSaving(true);
+    setSaveMessage('');
     
     try {
       await updateApiKeys({
         openaiKey: formData.openaiKey.trim() || undefined,
         claudeKey: formData.claudeKey.trim() || undefined
       });
+      
+      setSaveMessage('APIキーを保存しました');
+      setTimeout(() => setSaveMessage(''), 3000);
+    } catch (error) {
+      setSaveMessage('保存に失敗しました');
     } finally {
       setIsSaving(false);
     }
   };
 
   /**
-   * データをエクスポート
+   * 戻るボタンの処理
    */
-  const handleExport = async () => {
-    try {
-      const jsonData = await exportData();
-      const blob = new Blob([jsonData], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `menu-app-backup-${new Date().toISOString().split('T')[0]}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('エクスポートエラー:', error);
-    }
-  };
-
-  /**
-   * データをインポート
-   */
-  const handleImport = () => {
-    fileInputRef.current?.click();
-  };
-
-  /**
-   * ファイル選択時の処理
-   */
-  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    try {
-      const text = await file.text();
-      await importData(text);
-      // ファイル入力をリセット
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-    } catch (error) {
-      console.error('インポートエラー:', error);
-    }
+  const handleBack = () => {
+    setCurrentView('home');
   };
 
   /**
@@ -181,21 +167,25 @@ export const Settings: React.FC = () => {
   return (
     <div className="space-y-6 animate-fade-in">
       {/* ヘッダー */}
-      <div className="text-center space-y-2">
-        <h2 className="text-xl font-bold text-gray-900">設定</h2>
-        <p className="text-gray-600 text-sm">
-          APIキーの設定とアプリケーションの管理
-        </p>
+      <div className="flex items-center space-x-3">
+        <button
+          onClick={handleBack}
+          className="p-2 text-gray-600 hover:text-gray-900 transition-colors"
+          aria-label="戻る"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+        <h2 className="text-xl font-bold text-gray-900">APIトークン設定</h2>
       </div>
 
-      {/* 隠しファイル入力 */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept=".json"
-        onChange={handleFileSelect}
-        className="hidden"
-      />
+      {/* 保存メッセージ */}
+      {saveMessage && (
+        <div className={`p-3 rounded-lg ${saveMessage.includes('失敗') ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'}`}>
+          {saveMessage}
+        </div>
+      )}
 
       {/* AI プロバイダー選択 */}
       <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
@@ -235,14 +225,24 @@ export const Settings: React.FC = () => {
 
       {/* APIキー設定 */}
       <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
-        <h3 className="font-semibold text-gray-900 mb-3">APIキー設定</h3>
+        <h3 className="font-semibold text-gray-900 mb-4">APIキー設定</h3>
         
-        <div className="space-y-4">
+        <div className="space-y-6">
           {/* OpenAI APIキー */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              OpenAI APIキー
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-sm font-medium text-gray-700">
+                OpenAI APIキー
+              </label>
+              {formData.openaiKey && (
+                <button
+                  onClick={() => deleteApiKey('openai')}
+                  className="text-sm text-red-600 hover:text-red-800"
+                >
+                  削除
+                </button>
+              )}
+            </div>
             <div className="relative">
               <input
                 type={showKeys.openai ? 'text' : 'password'}
@@ -281,9 +281,19 @@ export const Settings: React.FC = () => {
 
           {/* Claude APIキー */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Claude APIキー
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-sm font-medium text-gray-700">
+                Claude APIキー
+              </label>
+              {formData.claudeKey && (
+                <button
+                  onClick={() => deleteApiKey('claude')}
+                  className="text-sm text-red-600 hover:text-red-800"
+                >
+                  削除
+                </button>
+              )}
+            </div>
             <div className="relative">
               <input
                 type={showKeys.claude ? 'text' : 'password'}
@@ -325,69 +335,18 @@ export const Settings: React.FC = () => {
         <button
           onClick={handleSave}
           disabled={isSaving}
-          className="w-full mt-4 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg transition-colors disabled:opacity-50"
+          className="w-full mt-6 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg transition-colors disabled:opacity-50"
         >
           {isSaving ? '保存中...' : 'APIキーを保存'}
         </button>
-
-        {/* APIキー取得方法の説明 */}
-        <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-          <h4 className="text-sm font-medium text-blue-900 mb-2">APIキーの取得方法</h4>
-          <div className="text-sm text-blue-700 space-y-1">
-            <p><strong>OpenAI:</strong> <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="underline">platform.openai.com</a> でアカウント作成後、APIキーを生成</p>
-            <p><strong>Claude:</strong> <a href="https://console.anthropic.com/" target="_blank" rel="noopener noreferrer" className="underline">console.anthropic.com</a> でアカウント作成後、APIキーを生成</p>
-          </div>
-        </div>
       </div>
 
-      {/* データ管理 */}
-      <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
-        <h3 className="font-semibold text-gray-900 mb-3">データ管理</h3>
-        
-        <div className="space-y-3">
-          <button
-            onClick={handleExport}
-            className="w-full bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg transition-colors flex items-center justify-center space-x-2"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            <span>データをエクスポート</span>
-          </button>
-          
-          <button
-            onClick={handleImport}
-            className="w-full bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded-lg transition-colors flex items-center justify-center space-x-2"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
-            </svg>
-            <span>データをインポート</span>
-          </button>
-        </div>
-        
-        <p className="text-xs text-gray-500 mt-3">
-          エクスポートしたJSONファイルには、保存済みの献立データと設定が含まれます。
-        </p>
-      </div>
-
-      {/* アプリ情報 */}
-      <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-200">
-        <h3 className="font-semibold text-gray-900 mb-3">アプリ情報</h3>
-        
-        <div className="space-y-2 text-sm text-gray-600">
-          <div className="flex justify-between">
-            <span>バージョン:</span>
-            <span>1.0.0</span>
-          </div>
-          <div className="flex justify-between">
-            <span>タイプ:</span>
-            <span>PWA</span>
-          </div>
-          <div className="flex justify-between">
-            <span>データ保存:</span>
-            <span>ローカル（IndexedDB）</span>
-          </div>
+      {/* APIキー取得方法の説明 */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <h4 className="text-sm font-medium text-blue-900 mb-2">APIキーの取得方法</h4>
+        <div className="text-sm text-blue-700 space-y-1">
+          <p><strong>OpenAI:</strong> <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="underline">platform.openai.com</a> でアカウント作成後、APIキーを生成</p>
+          <p><strong>Claude:</strong> <a href="https://console.anthropic.com/" target="_blank" rel="noopener noreferrer" className="underline">console.anthropic.com</a> でアカウント作成後、APIキーを生成</p>
         </div>
       </div>
     </div>
