@@ -48,6 +48,7 @@ export default defineConfig({
       }
     })
   ],
-  // GitHub Pagesでのホスティング用base設定（必要に応じて変更）
-  base: './'
+  // GitHub Pagesでのホスティング用base設定
+  // 環境変数VITE_BASE_URLが設定されていればそれを使用、なければ相対パス
+  base: process.env.VITE_BASE_URL || './'
 })
