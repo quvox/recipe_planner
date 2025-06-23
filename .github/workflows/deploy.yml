@@ -37,8 +37,13 @@ jobs:
           cache-dependency-path: app/pnpm-lock.yaml
 
       # ── ③ 依存を入れてビルド
-      - run: cd app && pnpm install --frozen-lockfile
-      - run: cd app && pnpm build:prod        # → app/dist
+      - name: Install dependencies
+        run: cd app && pnpm install --frozen-lockfile
+      - name: Build application
+        env:
+          # GitHub Pagesのベースパスを設定（リポジトリ名に応じて変更）
+          VITE_BASE_URL: './'
+        run: cd app && pnpm run build        # → app/dist
 
       # Pages 用 artifact を作成（gzip-tar 形式）
       - uses: actions/upload-pages-artifact@v3  # 2025 時点の最新  [oai_citation:13‡github.com](https://github.com/actions/upload-pages-artifact?utm_source=chatgpt.com)
