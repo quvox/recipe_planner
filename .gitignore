@@ -154,4 +154,8 @@ psd
 thumb
 sketch
 
+.idea
+.pnpm-store
+.claude
+
 # End of https://www.toptal.com/developers/gitignore/api/react,node
