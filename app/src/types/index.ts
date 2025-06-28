@@ -6,16 +6,17 @@
 // 献立データの基本構造（AI APIからの返答形式に対応）
 export interface MenuItem {
   title: string;         // 献立名
-  description: string;   // 概要説明
-  ingredients: string[]; // 材料リスト
-  steps: string[];       // 調理手順
-  time: number;          // 調理時間（分）
+  description: string;   // 見出し文
+  detail: string;        // 献立の味付けおよび詳細な説明
+  ingredients: string[]; // 材料とその分量
+  steps: string[];       // 料理手順
+  time: string;          // 所要時間
 }
 
 // IndexedDBに保存する献立レコード
 export interface MenuRecord extends MenuItem {
   id: string;              // UUID（一意識別子）
-  theme: string;           // テーマ（春/夏/秋/冬/がっつり/あっさり）
+  theme: string[];         // テーマ（春/夏/秋/冬/がっつり/あっさり）（複数選択可能）
   peoplePattern: string;   // 人数構成（夫婦2人/夫婦＋中高生3人/中高生3人）
   createdAt: string;       // 作成日時（ISO8601形式）
   inputIngredients: string[]; // 入力時に指定した食材リスト
@@ -25,7 +26,7 @@ export interface MenuRecord extends MenuItem {
 // 献立生成のためのフォームデータ
 export interface MenuFormData {
   ingredients: string[];   // 食材リスト（最低1個必要）
-  theme: string;          // テーマ選択
+  theme: string[];        // テーマ選択（複数選択可能、最低1個必要）
   peoplePattern: string;  // 人数構成選択
 }
 

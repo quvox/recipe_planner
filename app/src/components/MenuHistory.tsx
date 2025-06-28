@@ -250,10 +250,17 @@ export const MenuHistory: React.FC = () => {
                       <p className="text-sm text-gray-600 mb-2 line-clamp-2">
                         {menu.description}
                       </p>
-                      <div className="flex items-center text-xs text-gray-500 space-x-4">
-                        <span>🕒 {menu.time}分</span>
+                      <div className="flex items-center text-xs text-gray-500 space-x-4 flex-wrap">
+                        <span>🕒 {menu.time}</span>
                         <span>📅 {new Date(menu.createdAt).toLocaleDateString()}</span>
-                        <span>🏷️ {menu.theme}</span>
+                        <div className="flex items-center space-x-1">
+                          <span>🏷️</span>
+                          {Array.isArray(menu.theme) ? (
+                            <span>{menu.theme.join(', ')}</span>
+                          ) : (
+                            <span>{menu.theme}</span>
+                          )}
+                        </div>
                       </div>
                     </div>
                     
@@ -281,6 +288,14 @@ export const MenuHistory: React.FC = () => {
                       <div>
                         <h4 className="font-medium text-gray-900 mb-2">完全なタイトル</h4>
                         <p className="text-sm text-gray-700">{menu.title}</p>
+                      </div>
+                    )}
+                    
+                    {/* 詳細説明 */}
+                    {menu.detail && (
+                      <div>
+                        <h4 className="font-medium text-gray-900 mb-2">詳細</h4>
+                        <p className="text-sm text-gray-700 leading-relaxed">{menu.detail}</p>
                       </div>
                     )}
                     

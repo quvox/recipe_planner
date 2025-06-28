@@ -4,15 +4,11 @@
  */
 
 import React, { useState } from 'react';
-import type { MenuItem } from '../types';
+import type { MenuItem, MenuFormData } from '../types';
 import { useAppStore } from '../store';
 
 interface MenuResultsProps {
-  formData: {
-    ingredients: string[];
-    theme: string;
-    peoplePattern: string;
-  };
+  formData: MenuFormData;
 }
 
 /**
@@ -115,7 +111,7 @@ export const MenuResults: React.FC<MenuResultsProps> = ({ formData }) => {
                       <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
-                      {menu.time}分
+                      {menu.time}
                     </span>
                     <span className="inline-flex items-center text-xs text-gray-500">
                       <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -151,6 +147,14 @@ export const MenuResults: React.FC<MenuResultsProps> = ({ formData }) => {
                     <div>
                       <h4 className="font-medium text-gray-900 mb-2">完全なタイトル</h4>
                       <p className="text-sm text-gray-700">{menu.title}</p>
+                    </div>
+                  )}
+                  
+                  {/* 詳細説明 */}
+                  {menu.detail && (
+                    <div>
+                      <h4 className="font-medium text-gray-900 mb-2">詳細</h4>
+                      <p className="text-sm text-gray-700 leading-relaxed">{menu.detail}</p>
                     </div>
                   )}
                   
