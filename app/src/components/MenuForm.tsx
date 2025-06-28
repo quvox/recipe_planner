@@ -37,7 +37,7 @@ export const MenuForm: React.FC<MenuFormProps> = ({ onFormSubmit }) => {
   // フォームの状態管理
   const [formData, setFormData] = useState<MenuFormData>({
     ingredients: [''],
-    theme: '',
+    theme: [],
     peoplePattern: ''
   });
   
@@ -116,10 +116,27 @@ export const MenuForm: React.FC<MenuFormProps> = ({ onFormSubmit }) => {
   };
 
   /**
-   * テーマの更新
+   * テーマの更新（複数選択対応）
    */
-  const updateTheme = (theme: string) => {
-    setFormData(prev => ({ ...prev, theme }));
+  const toggleTheme = (themeValue: string) => {
+    setFormData(prev => {
+      const currentThemes = prev.theme;
+      const isSelected = currentThemes.includes(themeValue);
+      
+      if (isSelected) {
+        // 既に選択されている場合は削除
+        return {
+          ...prev,
+          theme: currentThemes.filter(t => t !== themeValue)
+        };
+      } else {
+        // 選択されていない場合は追加
+        return {
+          ...prev,
+          theme: [...currentThemes, themeValue]
+        };
+      }
+    });
   };
 
   /**
@@ -142,9 +159,9 @@ export const MenuForm: React.FC<MenuFormProps> = ({ onFormSubmit }) => {
       errors.ingredients = '食材を最低1つ入力してください';
     }
     
-    // テーマの検証
-    if (!formData.theme) {
-      errors.theme = 'テーマを選択してください';
+    // テーマの検証（最低1つ選択必須）
+    if (formData.theme.length === 0) {
+      errors.theme = 'テーマを最低1つ選択してください';
     }
     
     // 人数構成の検証
@@ -250,6 +267,7 @@ export const MenuForm: React.FC<MenuFormProps> = ({ onFormSubmit }) => {
         <div className="space-y-3">
           <label className="block text-sm font-medium text-gray-700">
             テーマ <span className="text-red-500">*</span>
+            <span className="text-gray-500 text-xs ml-2">（複数選択可）</span>
           </label>
           
           <div className="grid grid-cols-2 gap-2">
@@ -257,17 +275,35 @@ export const MenuForm: React.FC<MenuFormProps> = ({ onFormSubmit }) => {
               <button
                 key={option.value}
                 type="button"
-                onClick={() => updateTheme(option.value)}
+                onClick={() => toggleTheme(option.value)}
                 className={`px-4 py-3 rounded-lg border-2 transition-colors ${
-                  formData.theme === option.value
+                  formData.theme.includes(option.value)
                     ? 'border-blue-500 bg-blue-50 text-blue-700'
                     : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
                 }`}
               >
+                {formData.theme.includes(option.value) && (
+                  <span className="mr-2">✓</span>
+                )}
                 {option.label}
               </button>
             ))}
           </div>
+          
+          {/* 選択されたテーマの表示 */}
+          {formData.theme.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-2">
+              <span className="text-sm text-gray-600">選択中:</span>
+              {formData.theme.map((selectedTheme) => (
+                <span
+                  key={selectedTheme}
+                  className="inline-block bg-blue-100 text-blue-800 px-2 py-1 rounded-md text-sm"
+                >
+                  {selectedTheme}
+                </span>
+              ))}
+            </div>
+          )}
           
           {/* テーマエラーメッセージ */}
           {validationErrors.theme && (
